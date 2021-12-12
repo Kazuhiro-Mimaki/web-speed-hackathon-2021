@@ -1,4 +1,3 @@
-import _ from 'lodash';
 import React from 'react';
 
 /**
@@ -14,18 +13,29 @@ async function calculate(data) {
     audioCtx.decodeAudioData(data.slice(0), resolve, reject);
   });
   // 左の音声データの絶対値を取る
-  const leftData = _.map(buffer.getChannelData(0), Math.abs);
+  const leftData = buffer.getChannelData(0).map((data) => Math.abs(data));
   // 右の音声データの絶対値を取る
-  const rightData = _.map(buffer.getChannelData(1), Math.abs);
-
+  const rightData = buffer.getChannelData(1).map((data) => Math.abs(data));
   // 左右の音声データの平均を取る
-  const normalized = _.map(_.zip(leftData, rightData), _.mean);
+  const normalized = leftData.map((_, i) => (leftData[i] + rightData[i]) / 2);
   // 100 個の chunk に分ける
-  const chunks = _.chunk(normalized, Math.ceil(normalized.length / 100));
+  const chunks = [];
+  const size = Math.ceil(normalized.length / 100);
+  for (let i = 0; i < normalized.length; i += size) {
+    chunks.push(normalized.slice(i, i + size));
+  }
   // chunk ごとに平均を取る
-  const peaks = _.map(chunks, _.mean);
+  const peaks = [];
+  for (let i = 0; i < chunks.length; i++) {
+    let sum = 0;
+    for (const j of chunks[i]) {
+      sum += j;
+    }
+    peaks.push(sum / chunks[i].length);
+  }
   // chunk の平均の中から最大値を取る
-  const max = _.max(peaks);
+  const max = Math.max(...peaks);
+  console.log(max);
 
   return { max, peaks };
 }
